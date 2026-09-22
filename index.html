@@ -7,8 +7,27 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
     <style>
-        body { margin: 0; font-family: "Microsoft JhengHei", sans-serif; }
-        #panorama { width: 100vw; height: 100vh; }
+        body { margin: 0; font-family: "Microsoft JhengHei", sans-serif; overflow: hidden; background: #000; }
+        #panorama { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
+
+        /* 平面圖片檢視器容器樣式 */
+        #flat-view-container {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.9); z-index: 20; display: none;
+            justify-content: center; align-items: center; flex-direction: column;
+        }
+        #flat-view-container img {
+            max-width: 85vw; max-height: 75vh; border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); object-fit: contain;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .return-btn {
+            position: absolute; top: 20px; right: 20px; z-index: 25;
+            background: #ff4d4d; color: white; border: none; padding: 10px 20px;
+            font-size: 1.1rem; border-radius: 6px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4); transition: background 0.2s;
+        }
+        .return-btn:hover { background: #cc0000; }
 
         #title-overlay {
             position: absolute; top: 20px; left: 20px; z-index: 10;
@@ -17,8 +36,8 @@
             max-width: 320px;
             transition: all 0.3s ease;
         }
-        #title-overlay h2 { margin: 0 0 5px 0; font-size: 1.9rem; }
-        #title-overlay p { margin: 0 0 10px 0; font-size: 1.5rem; color: #ccc; }
+        #title-overlay h2 { margin: 0 0 5px 0; font-size: 1.4rem; }
+        #title-overlay p { margin: 0 0 10px 0; font-size: 1rem; color: #ccc; }
 
         /* 標題提示框收合樣式 */
         #title-overlay.collapsed {
@@ -58,23 +77,12 @@
         #info-modal {
             position: absolute; bottom: 20px; left: 20px; z-index: 10;
             background: rgba(255, 255, 255, 0.95); color: #333; padding: 15px 20px; border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4); max-width: 350px; display: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4); max-width: 320px; display: none;
             border-left: 5px solid #007bff;
         }
-        #info-modal h3 { margin: 0 0 8px 0; font-size: 1.9rem; color: #007bff; }
-        #info-modal p { margin: 0 0 10px 0; font-size: 1.5rem; line-height: 1.6; color: #555; }
-        
-        /* 平面照片樣式 */
-        #modal-image {
-            width: 100%;
-            max-height: 200px;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            display: none; /* 預設沒有圖片時隱藏，有圖片才顯示 */
-        }
+        #info-modal h3 { margin: 0 0 8px 0; font-size: 1.3rem; color: #007bff; }
+        #info-modal p { margin: 0; font-size: 1rem; line-height: 1.6; color: #555; }
 
-        /* 放大後的介紹視窗關閉按鈕 */
         #info-modal .close-btn {
             background: rgba(0, 123, 255, 0.15); 
             border: 1px solid rgba(0, 123, 255, 0.3); 
@@ -91,7 +99,6 @@
             color: #0056b3; 
         }
 
-        /* 展開空間介紹按鈕（當彈跳視窗關閉時顯示） */
         #info-toggle-btn {
             position: absolute; bottom: 20px; left: 20px; z-index: 10;
             background: rgba(0, 123, 255, 0.9); color: white; 
@@ -118,8 +125,6 @@
     <div id="info-modal">
         <button class="close-btn" onclick="toggleInfoModal()">✖ 關閉介紹</button>
         <h3 id="modal-title">區域名稱</h3>
-        <!-- 平面照片放置處 -->
-        <img id="modal-image" src="" alt="平面照片">
         <p id="modal-desc">區域介紹內容...</p>
     </div>
 
@@ -128,8 +133,14 @@
 
     <div id="panorama"></div>
 
+    <!-- 平面照片檢視容器 (廚房區) -->
+    <div id="flat-view-container">
+        <button class="return-btn" onclick="closeFlatView()">返回上課區</button>
+        <img id="flat-image" src="廚房區.jpg" alt="廚房區平面圖" onerror="this.src='https://placehold.co/800x600/333/fff?text=Kitchen+Flat+Image'">
+    </div>
+
     <script>
-        // 各區域的詳細介紹資料（包含平面照片欄位 image，若不需要照片可不填或留空）
+        // 各區域的詳細介紹資料
         const sceneInfo = {
             "counter": {
                 "title": "櫃檯｜長輩接送區",
@@ -173,8 +184,7 @@
             },
             "kitchen": {
                 "title": "廚房區｜依需求準備餐食",
-                "desc": "負責準備長輩的午餐與點心，並依照長輩的咀嚼能力與飲食需求準備餐食。廚房區與教室區具有良好的視線連結，工作人員準備餐食時，也能同時留意教室區長輩的活動與安全。",
-                "image": "廚房平面圖.jpg"  // 這裡填入你的平面照片檔名
+                "desc": "負責準備長輩的午餐與點心，並依照長輩的咀嚼能力與飲食需求準備餐食。廚房區與教室區具有良好的視線連結，工作人員準備餐食時，也能同時留意教室區長輩的活動與安全。"
             },
             "escape": {
                 "title": "逃生區｜安全與便利",
@@ -263,9 +273,7 @@
                         { "pitch": 0, "yaw": -160, "type": "scene", "text": "返回：走廊2", "sceneId": "middle" },
                         { "pitch": 0, "yaw": 119, "type": "scene", "text": "前往：圓滿家", "sceneId": "Perfect" },
                         { "pitch": 0, "yaw": -115, "type": "scene", "text": "前往：性別友善廁所", "sceneId": "toilet1" },
-                        // 在這裡加入點擊後跳出廚房平面圖與介紹的熱點 (可自行調整 yaw 角度讓它落在教室左右側)
-                        { "pitch": 0, "yaw": -60, "type": "info", "text": "查看：廚房平面圖", "clickHandlerFunc": function() { showInfo("kitchen", true); } },
-                        { "pitch": 0, "yaw": 60, "type": "info", "text": "查看：廚房平面圖", "clickHandlerFunc": function() { showInfo("kitchen", true); } }
+                        { "pitch": -5, "yaw": -45, "type": "info", "text": "檢視：廚房區平面圖", "clickHandlerFunc": openKitchenFlatView }
                     ]
                 },
                 "activity": {
@@ -275,7 +283,25 @@
             }
         });
 
-        // 切換上方提示框顯示/隱藏
+        function openKitchenFlatView(event) {
+            const container = document.getElementById('flat-view-container');
+            container.style.display = 'flex';
+            
+            const info = sceneInfo["kitchen"];
+            if(info) {
+                document.getElementById('modal-title').innerText = info.title;
+                document.getElementById('modal-desc').innerText = info.desc;
+                document.getElementById('info-modal').style.display = 'block';
+                document.getElementById('info-toggle-btn').style.display = 'none';
+            }
+        }
+
+        function closeFlatView() {
+            const container = document.getElementById('flat-view-container');
+            container.style.display = 'none';
+            showInfo("Attend class", true);
+        }
+
         function toggleOverlay(event) {
             if (event) event.stopPropagation();
             const overlay = document.getElementById('title-overlay');
@@ -316,15 +342,6 @@
             if (info) {
                 document.getElementById('modal-title').innerText = info.title;
                 document.getElementById('modal-desc').innerText = info.desc;
-
-                // 處理平面照片的顯示
-                const modalImage = document.getElementById('modal-image');
-                if (info.image) {
-                    modalImage.src = info.image;
-                    modalImage.style.display = 'block';
-                } else {
-                    modalImage.style.display = 'none';
-                }
 
                 const modal = document.getElementById('info-modal');
                 const toggleBtn = document.getElementById('info-toggle-btn');
