@@ -10,25 +10,6 @@
         body { margin: 0; font-family: "Microsoft JhengHei", sans-serif; overflow: hidden; background: #000; }
         #panorama { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
 
-        /* 平面圖片檢視器容器樣式 */
-        #flat-view-container {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.9); z-index: 20; display: none;
-            justify-content: center; align-items: center; flex-direction: column;
-        }
-        #flat-view-container img {
-            max-width: 85vw; max-height: 75vh; border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); object-fit: contain;
-            border: 2px solid rgba(255,255,255,0.2);
-        }
-        .return-btn {
-            position: absolute; top: 20px; right: 20px; z-index: 25;
-            background: #ff4d4d; color: white; border: none; padding: 10px 20px;
-            font-size: 1.1rem; border-radius: 6px; cursor: pointer; font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4); transition: background 0.2s;
-        }
-        .return-btn:hover { background: #cc0000; }
-
         #title-overlay {
             position: absolute; top: 20px; left: 20px; z-index: 10;
             background: rgba(0, 0, 0, 0.75); color: white; padding: 15px 20px; border-radius: 8px;
@@ -132,12 +113,6 @@
     <button id="info-toggle-btn" onclick="toggleInfoModal()">ℹ️ 展開空間介紹</button>
 
     <div id="panorama"></div>
-
-    <!-- 平面照片檢視容器 (廚房區) -->
-    <div id="flat-view-container">
-        <button class="return-btn" onclick="closeFlatView()">返回上課區</button>
-        <img id="flat-image" src="廚房.jpg" alt="廚房區平面圖" onerror="this.src='https://placehold.co/800x600/333/fff?text=Kitchen+Flat+Image'">
-    </div>
 
     <script>
         // 各區域的詳細介紹資料
@@ -273,7 +248,15 @@
                         { "pitch": 0, "yaw": -160, "type": "scene", "text": "返回：走廊2", "sceneId": "middle" },
                         { "pitch": 0, "yaw": 119, "type": "scene", "text": "前往：圓滿家", "sceneId": "Perfect" },
                         { "pitch": 0, "yaw": -115, "type": "scene", "text": "前往：性別友善廁所", "sceneId": "toilet1" },
-                        { "pitch": -5, "yaw": -45, "type": "info", "text": "檢視：廚房區平面圖", "clickHandlerFunc": openKitchenFlatView }
+                        // 將原本開啟平面圖的按鈕改為直接切換到 kitchen 全景場景
+                        { "pitch": -5, "yaw": -45, "type": "scene", "text": "前往：廚房區", "sceneId": "kitchen" }
+                    ]
+                },
+                // 新增的廚房全景場景設定
+                "kitchen": {
+                    "title": "廚房區", "type": "equirectangular", "panorama": "廚房.jpg",
+                    "hotSpots": [
+                        { "pitch": 0, "yaw": 180, "type": "scene", "text": "返回：上課區", "sceneId": "Attend class" }
                     ]
                 },
                 "activity": {
@@ -282,25 +265,6 @@
                 }
             }
         });
-
-        function openKitchenFlatView(event) {
-            const container = document.getElementById('flat-view-container');
-            container.style.display = 'flex';
-            
-            const info = sceneInfo["kitchen"];
-            if(info) {
-                document.getElementById('modal-title').innerText = info.title;
-                document.getElementById('modal-desc').innerText = info.desc;
-                document.getElementById('info-modal').style.display = 'block';
-                document.getElementById('info-toggle-btn').style.display = 'none';
-            }
-        }
-
-        function closeFlatView() {
-            const container = document.getElementById('flat-view-container');
-            container.style.display = 'none';
-            showInfo("Attend class", true);
-        }
 
         function toggleOverlay(event) {
             if (event) event.stopPropagation();
